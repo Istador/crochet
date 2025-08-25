@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+<script type="text/javascript" src="ntc.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $file    = document.getElementById('file')
+  const $colors  = document.getElementById('colors')
+  const $preview = document.getElementById('preview')
+  const $pattern = document.getElementById('pattern')
+
+  const img = document.createElement('img');
+  img.setAttribute('alt', 'your picture');
+
+  $file.addEventListener('change', (ev) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    const f = ev.target.files[0]
+    const r = new FileReader()
+    r.onloadend = () => { img.src = r.result }
+    if (f) { r.readAsDataURL(f) }
+  })
+
+  const line = ($cont, text) => {
+    const $div = document.createElement('div')
+    $div.textContent = text
+    $cont.appendChild($div)
+  };
+
+  const ul = ($cont, items) => {
+    const $ul = document.createElement('ul')
+    for (let i of items) {
+      let $li = document.createElement('li')
+      $li.textContent = i
+      $ul.appendChild($li)
+    }
+    $cont.appendChild($ul)
+  };
+
+  img.onload = async () => {
+    $colors.innerHTML  = ''
+    $preview.innerHTML = ''
+    $pattern.innerHTML = ''
+
+    const colors   = []
+    const colorMap = {}
+    const colorCnt = []
+
+    const ch = (color, size) => '[' + name(color) + '] ' + size + 'ch'
+    const sc = (color, size) => '[' + name(color) + '] ' + size + 'sc'
+    const rgb2hex = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
+    const name = (idx) => ntc.name(colors[idx])[1].toLowerCase()
+
+    const w = img.width
+    const h = img.height
+
+    const $can = document.createElement('canvas')
+    $can.width  = w
+    $can.height = h
+    $can.setAttribute('style', 'width: 50%; image-rendering: pixelated;')
+
+    const bmp = await createImageBitmap(img, { colorSpaceConversion: 'none' })
+
+    const ctx = $can.getContext('2d', { colorSpace: 'srgb' })
+    ctx.drawImage(bmp, 0, 0)
+
+    $preview.appendChild($can)
+
+    const imgData = ctx.getImageData(0, 0, w, h, { pixelFormat: 'rgba-unorm8' })
+
+    const getClr = (x, y) => {
+      const r = imgData.data[4 * x + 4 * w * y + 0]
+      const g = imgData.data[4 * x + 4 * w * y + 1]
+      const b = imgData.data[4 * x + 4 * w * y + 2]
+      return rgb2hex(r, g, b)
+    };
+    const getIdx = (x, y) => colorMap[getClr(x, y)]
+
+    for (let y = h - 1; y >= 0; y--) {
+      for (let x = w - 1; x >= 0; x--) {
+        const clr = getClr(x, y)
+        if (!(clr in colorMap)) {
+          colors.push(clr)
+          colorMap[clr] = colors.length - 1
+          colorCnt[colorMap[clr]] = 0
+        }
+        colorCnt[colorMap[clr]]++
+      }
+    }
+
+    line($colors, 'Colors:')
+    ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + colorCnt[i] + 'sc'))
+    line($colors, 'Total SC: ' + colorCnt.reduce((sum, cur) => sum + cur, 0))
+    line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 + ' x ' + h * 0.6 + ' cm')
+
+    let color = getIdx(w - 1, h - 1)
+    line($pattern, 'R0: [' + name(color) + '] slk ' + w + 'ch')
+
+    for (let y = h - 1; y >= 0; y--) {
+      let out  = "R" + (h - y) + ': '
+      let size = 0
+      let dir = (y % 2 ? -1 : 1)
+      for (let x = (y % 2 ? w - 1 : 0); 0 <= x && x < w; x += dir) {
+        size++
+        let clr = getIdx(x, y)
+        if (size && clr != color) {
+          out += sc(color, size - 1) + ' '
+          size = 1
+        }
+        color = clr
+      }
+      if (size) {
+        out += sc(color, size) + ' '
+      }
+      line($pattern, out)
+    }
+  }
+})
+</script>
+</head>
+<body>
+  <div>
+    <input id="file" type="file" accept="image/*"/>
+  </div>
+  <div id="abbreviations">
+    <ul>
+      <li>slk: slip knot</li>
+      <li>ch: chain</li>
+      <li>sc: single crochet</li>
+    </ul>
+  </div>
+  <div id="colors">
+  </div>
+  <div id="preview">
+  </div>
+  <div id="pattern">
+  </div>
+</body>
+</html>
