@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const $colors  = document.getElementById('colors')
   const $preview = document.getElementById('preview')
   const $pattern = document.getElementById('pattern')
+  const $chain   = document.getElementById('chain')
+  const $dblfun  = document.getElementById('double')
 
   const img = document.createElement('img');
   img.setAttribute('alt', 'your picture');
@@ -37,17 +39,23 @@ document.addEventListener('DOMContentLoaded', () => {
     $cont.appendChild($ul)
   };
 
-  img.onload = async () => {
+  render = async () => {
+    if (!img.width) { return }
+
     $colors.innerHTML  = ''
     $preview.innerHTML = ''
     $pattern.innerHTML = ''
 
     const colors   = []
     const colorMap = {}
-    const colorCnt = []
+    const scCnt    = []
+    const chCnt    = []
+    const dblfun   = $dblfun.checked
+    const chainEnd = $chain.checked
 
-    const ch = (color, size) => '[' + name(color) + '] ' + size + 'ch'
-    const sc = (color, size) => '[' + name(color) + '] ' + size + 'sc'
+    let lastColor = null
+    const ch = (color, size) => (lastColor != color ? '[' + name(lastColor = color) + '] ' : '') + size + 'ch'
+    const sc = (color, size) => (lastColor != color ? '[' + name(lastColor = color) + '] ' : '') + size * (dblfun + 1) + 'sc'
     const rgb2hex = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
     const name = (idx) => ntc.name(colors[idx])[1].toLowerCase()
 
@@ -77,50 +85,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const getIdx = (x, y) => colorMap[getClr(x, y)]
 
     for (let y = h - 1; y >= 0; y--) {
+      let clr = null
       for (let x = w - 1; x >= 0; x--) {
-        const clr = getClr(x, y)
+        clr = getClr(x, y)
         if (!(clr in colorMap)) {
           colors.push(clr)
           colorMap[clr] = colors.length - 1
-          colorCnt[colorMap[clr]] = 0
+          scCnt[colorMap[clr]] = 0
+          chCnt[colorMap[clr]] = 0
         }
-        colorCnt[colorMap[clr]]++
+        scCnt[colorMap[clr]]++
+      }
+      if (clr && chainEnd) {
+        chCnt[colorMap[clr]]++
       }
     }
 
-    line($colors, 'Colors:')
-    ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + colorCnt[i] + 'sc'))
-    line($colors, 'Total SC: ' + colorCnt.reduce((sum, cur) => sum + cur, 0))
-    line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 + ' x ' + h * 0.6 + ' cm')
-
     let color = getIdx(w - 1, h - 1)
-    line($pattern, 'R0: [' + name(color) + '] slk ' + w + 'ch')
+    chCnt[color] += w * (dblfun + 1)
+
+    line($colors, 'Colors:')
+    ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + scCnt[i] * (dblfun * 3 + 1) + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
+    line($colors, 'Total SC: ' + scCnt.reduce((sum, cur) => sum + cur, 0) * (dblfun * 3 + 1))
+    line($colors, 'Total CH: ' + (w + (chainEnd ? h : 0)) * (dblfun + 1))
+    line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
+
+    line($pattern, 'R0: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
+    lastColor = color
 
     for (let y = h - 1; y >= 0; y--) {
-      let out  = "R" + (h - y) + ': '
+      let out  = ''
       let size = 0
       let dir = (y % 2 ? -1 : 1)
       for (let x = (y % 2 ? w - 1 : 0); 0 <= x && x < w; x += dir) {
-        size++
         let clr = getIdx(x, y)
         if (size && clr != color) {
-          out += sc(color, size - 1) + ' '
-          size = 1
+          out += sc(color, size) + ' '
+          size = 0
         }
+        size++
         color = clr
       }
       if (size) {
         out += sc(color, size) + ' '
       }
-      line($pattern, out)
+      if (chainEnd) {
+        out += ch(color, 1) + ' '
+      }
+      line($pattern, "R" + ((h - y - 1) * (dblfun + 1) + 1) + ': ' + out)
+      if (dblfun) {
+        line($pattern, "R" + ((h - y - 1) * (dblfun + 1) + 2) + ': ' + out)
+      }
     }
   }
+
+  img.onload       = render
+  $dblfun.onchange = render
+  $chain.onchange  = render
 })
 </script>
 </head>
 <body>
   <div>
     <input id="file" type="file" accept="image/*"/>
+  </div>
+  <div>
+    <input type="checkbox" id="double"/> Double the fun
+  </div>
+  <div>
+    <input type="checkbox" id="chain" checked="checked"/> Chain at the end
   </div>
   <div id="abbreviations">
     <ul>
