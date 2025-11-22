@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chCnt    = []
     const dblfun   = $dblfun.checked
     const chainEnd = $chain.checked
+    const corner   = document.querySelector('input[name="corner"]:checked').value * 1
 
     let lastColor = null
     const ch = (color, size) => (lastColor != color ? '[' + name(lastColor = color) + '] ' : '') + size + 'ch'
@@ -59,8 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const rgb2hex = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
     const name = (idx) => ntc.name(colors[idx])[1].toLowerCase()
 
-    const w = img.width
-    const h = img.height
+    const w    = img.width
+    const h    = img.height
+    const dh   = h * (dblfun + 1)
+    const ydir = (corner < 2 ? -1 :  1)
+    let   xdir = (corner % 2 ?  1 : -1)
 
     const $can = document.createElement('canvas')
     $can.width  = w
@@ -84,9 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const getIdx = (x, y) => colorMap[getClr(x, y)]
 
-    for (let y = h - 1; y >= 0; y--) {
+    for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
+      const y = (dblfun ? Math.floor(dy / 2) : dy)
       let clr = null
-      for (let x = w - 1; x >= 0; x--) {
+      for (let x = (xdir === 1 ? 0 : w - 1); 0 <= x && x < w; x += xdir) {
         clr = getClr(x, y)
         if (!(clr in colorMap)) {
           colors.push(clr)
@@ -94,33 +99,32 @@ document.addEventListener('DOMContentLoaded', () => {
           scCnt[colorMap[clr]] = 0
           chCnt[colorMap[clr]] = 0
         }
-        scCnt[colorMap[clr]]++
+        scCnt[colorMap[clr]] += 1 + dblfun
       }
       if (clr && chainEnd) {
         chCnt[colorMap[clr]]++
       }
     }
 
-    let color = getIdx(w - 1, h - 1)
+    let color = getIdx((xdir === 1 ? 0 : w - 1), (ydir === 1 ? 0 : h - 1))
     chCnt[color] += w * (dblfun + 1)
 
     line($colors, 'Colors:')
-    ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + scCnt[i] * (dblfun * 3 + 1) + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
-    line($colors, 'Total SC: ' + scCnt.reduce((sum, cur) => sum + cur, 0) * (dblfun * 3 + 1))
+    ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + scCnt[i] + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
+    line($colors, 'Total SC: ' + scCnt.reduce((sum, cur) => sum + cur, 0))
     line($colors, 'Total CH: ' + (w + (chainEnd ? h : 0)) * (dblfun + 1))
     line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
 
     line($pattern, 'R1: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
     lastColor = color
 
-    const dh = h * (dblfun + 1)
-    for (let y = dh - 1; y >= 0; y--) {
+    for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
+      const y = (dblfun ? Math.floor(dy / 2) : dy)
       let out  = ''
       let inv  = ''
       let size = 0
-      let dir  = (y % 2 ? -1 : 1)
-      for (let x = (y % 2 ? w - 1 : 0); 0 <= x && x < w; x += dir) {
-        let clr = getIdx(x, (dblfun ? Math.floor(y / 2) : y))
+      for (let x = (xdir === 1 ? 0 : w - 1); 0 <= x && x < w; x += xdir) {
+        let clr = getIdx(x, y)
         if (size && clr != color) {
           out += sc(color, size) + ' '
           size = 0
@@ -128,19 +132,22 @@ document.addEventListener('DOMContentLoaded', () => {
         size++
         color = clr
       }
+      xdir = xdir * -1
       if (size) {
         out += sc(color, size) + ' '
       }
       if (chainEnd) {
         out += ch(color, 1) + ' '
       }
-      line($pattern, "R" + (dh - y + 1) + ': ' + out)
+
+      line($pattern, 'R' + ((ydir === 1 ? dy + 1 : dh - dy) + 1) + ': ' + out)
     }
   }
 
   img.onload       = render
   $dblfun.onchange = render
   $chain.onchange  = render
+  document.querySelectorAll('input[name="corner"]').forEach($el => $el.onchange = render)
 })
 </script>
 </head>
@@ -153,6 +160,13 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div>
     <input type="checkbox" id="chain" checked="checked"/> Turning chain at row ends
+  </div>
+  <div>
+    Start at corner:
+    <input type="radio" name="corner" value="3" checked="checked"/> Top Left
+    <input type="radio" name="corner" value="2"/> Top Right
+    <input type="radio" name="corner" value="1"/> Bottom Left
+    <input type="radio" name="corner" value="0"/> Bottom Right
   </div>
   <div id="abbreviations">
     <ul>
