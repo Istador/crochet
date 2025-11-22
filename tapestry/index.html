@@ -113,12 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     line($pattern, 'R0: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
     lastColor = color
 
-    for (let y = h - 1; y >= 0; y--) {
+    const dh = h * (dblfun + 1)
+    for (let y = dh - 1; y >= 0; y--) {
       let out  = ''
+      let inv  = ''
       let size = 0
-      let dir = (y % 2 ? -1 : 1)
+      let dir  = (y % 2 ? -1 : 1)
       for (let x = (y % 2 ? w - 1 : 0); 0 <= x && x < w; x += dir) {
-        let clr = getIdx(x, y)
+        let clr = getIdx(x, (dblfun ? Math.floor(y / 2) : y))
         if (size && clr != color) {
           out += sc(color, size) + ' '
           size = 0
@@ -132,10 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (chainEnd) {
         out += ch(color, 1) + ' '
       }
-      line($pattern, "R" + ((h - y - 1) * (dblfun + 1) + 1) + ': ' + out)
-      if (dblfun) {
-        line($pattern, "R" + ((h - y - 1) * (dblfun + 1) + 2) + ': ' + out)
-      }
+      line($pattern, "R" + ((dh - y - 1) + 1) + ': ' + out)
     }
   }
 
