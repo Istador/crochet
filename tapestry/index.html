@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     line($colors, 'Total CH: ' + (w + (chainEnd ? h : 0)) * (dblfun + 1))
     line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
 
-    line($pattern, 'R0: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
+    line($pattern, 'R1: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
     lastColor = color
 
     const dh = h * (dblfun + 1)
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (chainEnd) {
         out += ch(color, 1) + ' '
       }
-      line($pattern, "R" + ((dh - y - 1) + 1) + ': ' + out)
+      line($pattern, "R" + (dh - y + 1) + ': ' + out)
     }
   }
 
