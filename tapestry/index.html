@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const g = imgData.data[4 * x + 4 * w * y + 1]
       const b = imgData.data[4 * x + 4 * w * y + 2]
       return rgb2hex(r, g, b)
-    };
+    }
     const getIdx = (x, y) => colorMap[getClr(x, y)]
 
     for (let y = h - 1; y >= 0; y--) {
@@ -149,16 +149,16 @@ document.addEventListener('DOMContentLoaded', () => {
     <input id="file" type="file" accept="image/*"/>
   </div>
   <div>
-    <input type="checkbox" id="double"/> Double the fun
+    <input type="checkbox" id="double"/> Double the fun (1 px = 4 sc)
   </div>
   <div>
-    <input type="checkbox" id="chain" checked="checked"/> Chain at the end
+    <input type="checkbox" id="chain" checked="checked"/> Turning chain at row ends
   </div>
   <div id="abbreviations">
     <ul>
       <li>slk: slip knot</li>
       <li>ch: chain</li>
-      <li>sc: single crochet</li>
+      <li>sc: single crochet (US)</li>
     </ul>
   </div>
   <div id="colors">
