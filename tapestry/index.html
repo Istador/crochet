@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         scCnt[colorMap[clr]] += 1 + dblfun
       }
-      if (clr && chainEnd) {
+      if (clr && chainEnd && dy !== (ydir ? dh - 1 : 0) ) {
         chCnt[colorMap[clr]]++
       }
     }
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     line($colors, 'Colors:')
     ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + scCnt[i] + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
     line($colors, 'Total SC: ' + scCnt.reduce((sum, cur) => sum + cur, 0))
-    line($colors, 'Total CH: ' + (w + (chainEnd ? h : 0)) * (dblfun + 1))
+    line($colors, 'Total CH: ' + ((w + (chainEnd ? h : 0)) * (dblfun + 1) - chainEnd))
     line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
 
     line($pattern, 'R1: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
@@ -136,8 +136,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (size) {
         out += sc(color, size) + ' '
       }
-      if (chainEnd) {
-        out += ch(color, 1) + ' '
+
+      if (dy === (ydir === 1 ? dh - 1 : 0)) {
+        out += 'fo'
+      } else if (chainEnd) {
+        out += ch(color, 1)
       }
 
       line($pattern, 'R' + ((ydir === 1 ? dy + 1 : dh - dy) + 1) + ': ' + out)
@@ -173,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <li>slk: slip knot</li>
       <li>ch: chain</li>
       <li>sc: single crochet (US)</li>
+      <li>fo: fasten off</li>
     </ul>
   </div>
   <div id="colors">
