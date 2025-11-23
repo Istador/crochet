@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rgb2hex = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
     const name = (idx) => ntc.name(colors[idx])[1].toLowerCase()
     const rnd  = (r) => '<b>' + (corner % 2 ? (xdir === 1 ? '&#8604;' : '&rarr;') : (xdir === 1 ? '&larr;' : '&rarrw;')) + ' R' + pad(r) + ':</b> '
+    const strike = (ev) => ev.currentTarget.classList.toggle('strike')
 
     const w    = img.width
     const h    = img.height
@@ -196,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       line($pattern, rnd((ydir === 1 ? dy + 1 : dh - dy) + 1) + out)
     }
+    document.querySelectorAll('#pattern > div > b[style]').forEach($el => $el.onclick = strike)
   }
 
   img.onload       = render
@@ -219,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 #pattern > div > b:not(:first-of-type) {
   border: 1px solid black;
+  cursor: pointer;
 }
 #pattern > div > b:first-of-type {
   width: 60px;
@@ -233,6 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 span[title] {
   cursor: help;
+}
+.strike {
+  opacity: 0.2;
 }
 </style>
 <body>
