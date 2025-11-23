@@ -69,6 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const ydir = (corner < 2 ? -1 :  1)
     let   xdir = (corner % 2 ?  1 : -1)
 
+    const rdgts = ((dh + 1) + '').length
+    const pad   = (x) => (x + '').padStart(rdgts, '0')
+
     const $can = document.createElement('canvas')
     $can.width  = w
     $can.height = h
@@ -157,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     line($colors, 'Total CH: ' + ((w + (chainEnd ? h : 0)) * (dblfun + 1) - chainEnd))
     line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
 
-    line($pattern, 'R1: [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
+    line($pattern, 'R' + pad(1) + ': [' + name(color) + '] slk ' + w * (dblfun + 1) + 'ch')
     lastColor = color
 
     for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
@@ -185,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         out += ch(color, 1)
       }
 
-      line($pattern, 'R' + ((ydir === 1 ? dy + 1 : dh - dy) + 1) + ': ' + out)
+      line($pattern, 'R' + pad((ydir === 1 ? dy + 1 : dh - dy) + 1) + ': ' + out)
     }
   }
 
