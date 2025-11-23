@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sc = (color, size) => txtColor(color, size * (dblfun + 1) + 'sc')
     const rgb2hex = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
     const name = (idx) => ntc.name(colors[idx])[1].toLowerCase()
+    const rnd  = (r) => '<b>' + (corner % 2 ? (xdir === 1 ? '&#8604;' : '&rarr;') : (xdir === 1 ? '&larr;' : '&rarrw;')) + ' R' + pad(r) + ':</b> '
 
     const w    = img.width
     const h    = img.height
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clrname   = $clrname.checked
     lastColor = null
 
-    line($pattern, 'R' + pad(1) + ': ' + txtColor(color, 'slk') + ' ' + txtColor(color, w * (dblfun + 1) + 'ch'))
+    line($pattern, rnd(1) + txtColor(color, 'slk') + ' ' + txtColor(color, w * (dblfun + 1) + 'ch'))
 
     for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
       const y = (dblfun ? Math.floor(dy / 2) : dy)
@@ -193,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         out += ch(color, 1)
       }
 
-      line($pattern, 'R' + pad((ydir === 1 ? dy + 1 : dh - dy) + 1) + ': ' + out)
+      line($pattern, rnd((ydir === 1 ? dy + 1 : dh - dy) + 1) + out)
     }
   }
 
@@ -215,7 +216,12 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 #pattern > div > b {
   display: inline-block;
+}
+#pattern > div > b:not(:first-of-type) {
   border: 1px solid black;
+}
+#pattern > div > b:first-of-type {
+  width: 60px;
 }
 #pattern > div > b > b {
   display: inline-block;
@@ -255,6 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
       <li>ch: chain</li>
       <li>sc: single crochet (US)</li>
       <li>fo: fasten off</li>
+      <li>&larr;: front/right side moving to the left</li>
+      <li>&rarr;: front/right side moving to the right</li>
+      <li>&#8604;: back/wrong side moving to the left</li>
+      <li>&rarrw;: back/wrong side moving to the right</li>
     </ul>
   </div>
   <div id="colors">
