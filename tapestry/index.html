@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const $pattern = document.getElementById('pattern')
   const $chain   = document.getElementById('chain')
   const $dblfun  = document.getElementById('double')
+  const $grid    = document.getElementById('grid')
 
   const img = document.createElement('img');
   img.setAttribute('alt', 'your picture');
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chCnt    = []
     const dblfun   = $dblfun.checked
     const chainEnd = $chain.checked
+    const grid     = $grid.checked
     const corner   = document.querySelector('input[name="corner"]:checked').value * 1
 
     let lastColor = null
@@ -62,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const w    = img.width
     const h    = img.height
+    const dw   = w * (dblfun + 1)
     const dh   = h * (dblfun + 1)
     const ydir = (corner < 2 ? -1 :  1)
     let   xdir = (corner % 2 ?  1 : -1)
@@ -76,8 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = $can.getContext('2d', { colorSpace: 'srgb' })
     ctx.drawImage(bmp, 0, 0)
 
-    $preview.appendChild($can)
-
     const imgData = ctx.getImageData(0, 0, w, h, { pixelFormat: 'rgba-unorm8' })
 
     const getClr = (x, y) => {
@@ -87,6 +88,47 @@ document.addEventListener('DOMContentLoaded', () => {
       return rgb2hex(r, g, b)
     }
     const getIdx = (x, y) => colorMap[getClr(x, y)]
+
+    if (grid) {
+      const scale = 10
+      const $can2 = document.createElement('canvas')
+      $can2.width  = dw * scale
+      $can2.height = dh * scale
+      $can2.setAttribute('style', 'width: 50%;')
+      ctx2 = $can2.getContext('2d', { colorSpace: 'srgb', antialias: false })
+      ctx2.patternQuality = 'best'
+      ctx2.imageSmoothingEnabled = false
+      ctx2.drawImage(bmp, 0, 0, dw * scale, dh * scale)
+      const imgData2 = ctx2.getImageData(0, 0, dw * scale, dh * scale, { pixelFormat: 'rgba-unorm8' })
+      const invertPixel = (x, y) => {
+        const offsets = []
+        if (y < dh - 1) {
+          for (let sx = 0; sx < scale; sx++) {
+              offsets.push([sx, scale - 1])
+          }
+        }
+        if (x < dw - 1) {
+          for (let sy = 0; sy < scale; sy++) {
+              offsets.push([scale - 1, sy])
+          }
+        }
+        for (let c = 0; c < 3; c++) {
+          const clr = 255 - imgData.data[4 * (dblfun ? Math.floor(x / 2) : x) + 4 * w * (dblfun ? Math.floor(y / 2) : y) + c]
+          for (let [dx, dy] of offsets) {
+            imgData2.data[4 * (x * scale + dx) + 4 * (scale * dw) * (y * scale + dy) + c] = clr
+          }
+        }
+      }
+      for (let x = 0; x < dw; x++) {
+        for (let y = 0; y < dh; y++) {
+          invertPixel(x, y)
+        }
+      }
+      ctx2.putImageData(imgData2, 0, 0)
+      $preview.appendChild($can2)
+    } else {
+      $preview.appendChild($can)
+    }
 
     for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
       const y = (dblfun ? Math.floor(dy / 2) : dy)
@@ -150,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   img.onload       = render
   $dblfun.onchange = render
   $chain.onchange  = render
+  $grid.onchange   = render
   document.querySelectorAll('input[name="corner"]').forEach($el => $el.onchange = render)
 })
 </script>
@@ -157,6 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <body>
   <div>
     <input id="file" type="file" accept="image/*"/>
+  </div>
+  <div>
+    <input type="checkbox" id="grid" checked="checked"/> Show pixel grid
   </div>
   <div>
     <input type="checkbox" id="double"/> Double the fun (1 px = 4 sc)
