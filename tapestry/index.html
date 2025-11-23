@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const $ul = document.createElement('ul')
     for (let i of items) {
       let $li = document.createElement('li')
-      $li.textContent = i
+      $li.innerHTML = i
       $ul.appendChild($li)
     }
     $cont.appendChild($ul)
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         for (let c = 0; c < 3; c++) {
-          const clr = 255 - imgData.data[4 * (dblfun ? Math.floor(x / 2) : x) + 4 * w * (dblfun ? Math.floor(y / 2) : y) + c]
+          let clr = 255 - imgData.data[4 * (dblfun ? Math.floor(x / 2) : x) + 4 * w * (dblfun ? Math.floor(y / 2) : y) + c]
           for (let [dx, dy] of offsets) {
             imgData2.data[4 * (x * scale + dx) + 4 * (scale * dw) * (y * scale + dy) + c] = clr
           }
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chCnt[color] += w * (dblfun + 1)
 
     line($colors, 'Colors:')
-    ul($colors, colors.map((hex, i) => name(i) + ' (' + hex + '): ' + scCnt[i] + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
+    ul($colors, colors.map((hex, i) => '<span title="' + hex + '">' + txtColor(i, name(i)) + ':</span> ' + scCnt[i] + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
     line($colors, 'Total SC: ' + scCnt.reduce((sum, cur) => sum + cur, 0))
     line($colors, 'Total CH: ' + ((w + (chainEnd ? h : 0)) * (dblfun + 1) - chainEnd))
     line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
@@ -208,13 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </head>
 <style type="text/css">
-#pattern b {
+#pattern b, #colors b  {
   font-weight: normal;
 }
-#pattern > div {
+#pattern > div, #colors li {
   margin: 2px;
 }
-#pattern > div > b {
+#pattern > div > b, #colors li b {
   display: inline-block;
 }
 #pattern > div > b:not(:first-of-type) {
@@ -223,13 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
 #pattern > div > b:first-of-type {
   width: 60px;
 }
-#pattern > div > b > b {
+#pattern > div > b > b, #colors li b > b {
   display: inline-block;
   padding: 2px;
   background: inherit;
   background-clip: text;
   color: transparent;
   filter: sepia(0.2) invert(1) saturate(0) contrast(9000);
+}
+span[title] {
+  cursor: help;
 }
 </style>
 <body>
