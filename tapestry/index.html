@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const $pattern = document.getElementById('pattern')
   const $chain   = document.getElementById('chain')
   const $dblfun  = document.getElementById('double')
+  const $prepare = document.getElementById('prepare')
   const $grid    = document.getElementById('grid')
   const $clrname = document.getElementById('clrname')
 
@@ -53,19 +54,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const scCnt    = []
     const chCnt    = []
     const dblfun   = $dblfun.checked
+    const prepare  = $prepare.checked
     const chainEnd = $chain.checked
     const grid     = $grid.checked
     let   clrname  = false
     const corner   = document.querySelector('input[name="corner"]:checked').value * 1
 
-    let lastColor = null
-    const txtColor = (color, text) => '<b style="background-color: ' + colors[color] + ';"><b>' + (clrname && lastColor != color ? '[' + name(lastColor = color) + '] ' : '') + text + '</b></b>'
-    const ch = (color, size) => txtColor(color, size + 'ch')
-    const sc = (color, size) => txtColor(color, size * (dblfun + 1) + 'sc')
-    const rgb2hex = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
-    const name = (idx) => ntc.name(colors[idx])[1].toLowerCase()
-    const rnd  = (r) => '<b>' + (corner % 2 ? (xdir === 1 ? '&#8604;' : '&rarr;') : (xdir === 1 ? '&larr;' : '&rarrw;')) + ' R' + pad(r) + ':</b> '
-    const strike = (ev) => ev.currentTarget.classList.toggle('strike')
+    let lastColor1  = null
+    let lastColor2  = null
+    const txtColor  = (clr1, text) => '<b style="background-color: ' + colors[clr1] + ';"><b>' + (clrname && lastColor1 != clr1 ? '[' + name(lastColor1 = clr1) + '] ' : '') + text + '</b></b>'
+    const txtColor2 = (clr1, clr2, text) => '<b style="background: linear-gradient(135deg, ' + colors[clr1] + ' 80%, ' + colors[clr2] + ' 80%);"><b>' + (clrname && (lastColor1 != clr1 || lastColor2 != clr2) ? '[' + name(lastColor1 = clr1) + ' / ' + name(lastColor2 = clr2) + '] ' : '') + text + '</b></b>'
+    const ch        = (clr1, size) => txtColor(clr1, size + 'ch')
+    const sc        = (clr1, clr2, size) => (clr1 === clr2 ? txtColor(clr1, size + 'sc') : txtColor2(clr1, clr2, size + 'sc'))
+    const rgb2hex   = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
+    const name      = (idx) => ntc.name(colors[idx])[1].toLowerCase()
+    const rnd       = (r) => '<b>' + (corner % 2 ? (xdir === 1 ? '&#8604;' : '&rarr;') : (xdir === 1 ? '&larr;' : '&rarrw;')) + ' R' + pad(r) + ':</b> '
+    const strike    = (ev) => ev.currentTarget.classList.toggle('strike')
 
     const w    = img.width
     const h    = img.height
@@ -95,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const b = imgData.data[4 * x + 4 * w * y + 2]
       return rgb2hex(r, g, b)
     }
-    const getIdx = (x, y) => colorMap[getClr(x, y)]
+    const getIdx = (x, y, fallback = null) => (x < 0 || y < 0 || w < x || h < y ? fallback : colorMap[getClr(x, y)])
 
     if (grid) {
       const scale = 10
@@ -109,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx2.drawImage(bmp, 0, 0, dw * scale, dh * scale)
       const imgData2 = ctx2.getImageData(0, 0, dw * scale, dh * scale, { pixelFormat: 'rgba-unorm8' })
       const invertPixel = (x, y) => {
-        const offsets = []
+        const offsets = [] // pixels that need to be inverted
         if (y < dh - 1) {
           for (let sx = 0; sx < scale; sx++) {
               offsets.push([sx, scale - 1])
@@ -120,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
               offsets.push([scale - 1, sy])
           }
         }
-        for (let c = 0; c < 3; c++) {
+        for (let c = 0; c < 3; c++) { // for each of the color components (R, G, B)
           let clr = 255 - imgData.data[4 * (dblfun ? Math.floor(x / 2) : x) + 4 * w * (dblfun ? Math.floor(y / 2) : y) + c]
           for (let [dx, dy] of offsets) {
             imgData2.data[4 * (x * scale + dx) + 4 * (scale * dw) * (y * scale + dy) + c] = clr
@@ -138,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $preview.appendChild($can)
     }
 
+    // prepare the color map and count the sc & ch amounts for each color
     for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
       const y = (dblfun ? Math.floor(dy / 2) : dy)
       let clr = null
@@ -156,8 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    let color = getIdx((xdir === 1 ? 0 : w - 1), (ydir === 1 ? 0 : h - 1))
-    chCnt[color] += w * (dblfun + 1)
+    let color1 = getIdx((xdir === 1 ? 0 : w - 1), (ydir === 1 ? 0 : h - 1))
+    let color2 = color1
+    chCnt[color1] += w * (dblfun + 1)
 
     line($colors, 'Colors:')
     ul($colors, colors.map((hex, i) => '<span title="' + hex + '">' + txtColor(i, name(i)) + ':</span> ' + scCnt[i] + 'sc ' + (chCnt[i] ? chCnt[i] + 'ch ' : ' ')))
@@ -165,34 +171,44 @@ document.addEventListener('DOMContentLoaded', () => {
     line($colors, 'Total CH: ' + ((w + (chainEnd ? h : 0)) * (dblfun + 1) - chainEnd))
     line($colors, 'Estimated size (w/ size 3 yarn): ' + w * 0.7 * (dblfun + 1) + ' x ' + h * 0.6 * (dblfun + 1) + ' cm')
 
-    clrname   = $clrname.checked
-    lastColor = null
+    clrname    = $clrname.checked
+    lastColor1 = null
+    lastColor2 = null
 
-    line($pattern, rnd(1) + txtColor(color, 'slk') + ' ' + txtColor(color, w * (dblfun + 1) + 'ch'))
+    line($pattern, rnd(1) + txtColor(color1, 'slk') + ' ' + txtColor(color1, w * (dblfun + 1) + 'ch'))
 
     for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
       const y = (dblfun ? Math.floor(dy / 2) : dy)
+      const ydbl = dblfun && ((dy % 2) === (ydir === 1 ? 0 : 1)) // is it the first of the two rows in this color (the doubled one)
       let out  = ''
-      let inv  = ''
       let size = 0
-      for (let x = (xdir === 1 ? 0 : w - 1); 0 <= x && x < w; x += xdir) {
-        let clr = getIdx(x, y)
-        if (size && clr != color) {
-          out += sc(color, size) + ' '
+      for (let dx = (xdir === 1 ? 0 : dw - 1); 0 <= dx && dx < dw; dx += xdir) {
+        const x = (dblfun ? Math.floor(dx / 2) : dx)
+        const xend = dx === (xdir === 1 ? dw - 1 : 0) // did we reach the end of the row?
+        const xdbl = dblfun && ((dx % 2) === (xdir === 1 ? 0 : 1)) // is it the first of the two sc in this color (the doubled one)
+        const clr1 = getIdx(x, y)
+        const clr2 = (!prepare ? clr1 : getIdx(
+          Math.max(0, Math.min(w - 1, x + (xend || xdbl ? 0 : xdir))),
+          Math.max(0, Math.min(h - 1, y + (ydbl ? 0 : ydir) + (xend && (!dblfun || ydbl) ? ydir : 0))),
+          clr1
+        )) // second color for the last loop of this sc
+        if (size && (clr1 != color1 || (prepare && clr2 !== color2))) { // color change
+          out += sc(color1, color2, size) + ' '
           size = 0
         }
         size++
-        color = clr
+        color1 = clr1
+        color2 = clr2
       }
       xdir = xdir * -1
-      if (size) {
-        out += sc(color, size) + ' '
+      if (size) { // last remaining sc (never seeing a color change)
+        out += sc(color1, color2, size) + ' '
       }
 
       if (dy === (ydir === 1 ? dh - 1 : 0)) {
-        out += txtColor(color, 'fo')
+        out += txtColor(color1, 'fo')
       } else if (chainEnd) {
-        out += ch(color, 1)
+        out += ch(color2, 1)
       }
 
       line($pattern, rnd((ydir === 1 ? dy + 1 : dh - dy) + 1) + out)
@@ -200,10 +216,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#pattern > div > b[style]').forEach($el => $el.onclick = strike)
   }
 
-  img.onload       = render
-  $dblfun.onchange = render
-  $chain.onchange  = render
-  $grid.onchange   = render
+  img.onload        = render
+  $dblfun.onchange  = render
+  $prepare.onchange = render
+  $chain.onchange   = render
+  $grid.onchange    = render
   $clrname.onchange = render
   document.querySelectorAll('input[name="corner"]').forEach($el => $el.onchange = render)
 })
@@ -253,6 +270,9 @@ span[title] {
   </div>
   <div>
     <input type="checkbox" id="double"/> Double the fun (1 px = 4 sc)
+  </div>
+  <div>
+    <input type="checkbox" id="prepare"/> Prepare next row's color
   </div>
   <div>
     <input type="checkbox" id="chain" checked="checked"/> Turning chain at row ends
