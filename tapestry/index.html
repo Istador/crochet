@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const $chain   = document.getElementById('chain')
   const $dblfun  = document.getElementById('double')
   const $prepare = document.getElementById('prepare')
+  const $rounds  = document.getElementById('rounds')
   const $grid    = document.getElementById('grid')
   const $clrname = document.getElementById('clrname')
 
@@ -55,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const chCnt    = []
     const dblfun   = $dblfun.checked
     const prepare  = $prepare.checked
-    const chainEnd = $chain.checked
+    const rounds   = $rounds.checked
+    const chainEnd = $chain.checked && !rounds
     const grid     = $grid.checked
     let   clrname  = false
     const corner   = document.querySelector('input[name="corner"]:checked').value * 1
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sc        = (clr1, clr2, size) => (clr1 === clr2 ? txtColor(clr1, size + 'sc') : txtColor2(clr1, clr2, size + 'sc'))
     const rgb2hex   = (r, g, b) => '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)
     const name      = (idx) => ntc.name(colors[idx])[1].toLowerCase()
-    const rnd       = (r) => '<b>' + (corner % 2 ? (xdir === 1 ? '&#8604;' : '&rarr;') : (xdir === 1 ? '&larr;' : '&rarrw;')) + ' R' + pad(r) + ':</b> '
+    const rnd       = (r) => '<b>' + ( xdir === -1 ? (rounds || r === 1 || corner % 2 === 0 ? '&larr;' : '&#8604;') : (rounds || r === 1 || corner % 2 === 1 ? '&rarr;' : '&rarrw;') ) + ' R' + pad(r) + ':</b> '
     const strike    = (ev) => ev.currentTarget.classList.toggle('strike')
 
     const w    = img.width
@@ -175,10 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
     lastColor1 = null
     lastColor2 = null
 
+    if (!rounds) { xdir = xdir * -1 }
     line($pattern, rnd(1) + txtColor(color1, 'slk') + ' ' + txtColor(color1, w * (dblfun + 1) + 'ch'))
+    if (!rounds) { xdir = xdir * -1 }
 
     for (let dy = (ydir === 1 ? 0 : dh - 1); 0 <= dy && dy < dh; dy += ydir) {
       const y = (dblfun ? Math.floor(dy / 2) : dy)
+      const yend = dy === (ydir === 1 ? dh - 1 : 0) // did we reach the last row?
       const ydbl = dblfun && ((dy % 2) === (ydir === 1 ? 0 : 1)) // is it the first of the two rows in this color (the doubled one)
       let out  = ''
       let size = 0
@@ -188,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const xdbl = dblfun && ((dx % 2) === (xdir === 1 ? 0 : 1)) // is it the first of the two sc in this color (the doubled one)
         const clr1 = getIdx(x, y)
         const clr2 = (!prepare ? clr1 : getIdx(
-          Math.max(0, Math.min(w - 1, x + (xend || xdbl ? 0 : xdir))),
+          Math.max(0, Math.min(w - 1, (w + x + (!rounds && xend || xdbl || rounds && xend && yend ? 0 : xdir)) % w)),
           Math.max(0, Math.min(h - 1, y + (ydbl ? 0 : ydir) + (xend && (!dblfun || ydbl) ? ydir : 0))),
           clr1
         )) // second color for the last loop of this sc
@@ -200,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         color1 = clr1
         color2 = clr2
       }
-      xdir = xdir * -1
+
       if (size) { // last remaining sc (never seeing a color change)
         out += sc(color1, color2, size) + ' '
       }
@@ -212,6 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       line($pattern, rnd((ydir === 1 ? dy + 1 : dh - dy) + 1) + out)
+
+      if (!rounds) { xdir = xdir * -1 }
     }
     document.querySelectorAll('#pattern > div > b[style]').forEach($el => $el.onclick = strike)
   }
@@ -219,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
   img.onload        = render
   $dblfun.onchange  = render
   $prepare.onchange = render
+  $rounds.onchange  = render
   $chain.onchange   = render
   $grid.onchange    = render
   $clrname.onchange = render
@@ -273,6 +281,9 @@ span[title] {
   </div>
   <div>
     <input type="checkbox" id="prepare"/> Prepare next row's color
+  </div>
+  <div>
+    <input type="checkbox" id="rounds"/> Work in rounds (don't turn)
   </div>
   <div>
     <input type="checkbox" id="chain" checked="checked"/> Turning chain at row ends
